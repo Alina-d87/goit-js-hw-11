@@ -25,6 +25,7 @@ async function onSearchForm(e) {
       return;
     }
     clearInput();
+
     resetPage();
 
     const dataImg = await fetchImg(searchName);
@@ -40,6 +41,7 @@ async function onSearchForm(e) {
       );
       return;
     }
+
     refs.listGallery.innerHTML = imgCart(img);
   } catch (error) {
     console.log('error');
