@@ -1,89 +1,100 @@
 import './css/styles.css';
-import axios from 'axios';
-axios.get('/users').then(res => {
-  console.log(res.data);
-});
-//import Notiflix from 'notiflix';
+import Notiflix from 'notiflix';
+import { fetchImg, resetPage } from './fetchImages';
 
-const imgCart = item => `
-  <div class="photo-card">
-    <img src="" alt="" loading="lazy" />
+const refs = {
+  form: document.querySelector('.search-form'),
+  inputName: document.querySelector('input'),
+  listGallery: document.querySelector('.gallery'),
+  btnLoad: document.querySelector('.load-more'),
+};
+
+let searchName = '';
+
+refs.form.addEventListener('submit', onSearchForm);
+refs.btnLoad.addEventListener('click', onLoad);
+
+refs.btnLoad.classList.add('is-visible');
+
+async function onSearchForm(e) {
+  e.preventDefault();
+  try {
+    searchName = refs.inputName.value.trim();
+    if (searchName === '') {
+      clearInput();
+      return;
+    }
+    clearInput();
+    resetPage();
+
+    const dataImg = await fetchImg(searchName);
+    const { img, totalHits, lastPage } = dataImg;
+
+    refs.btnLoad.classList.remove('is-visible');
+    if (lastPage) {
+      refs.btnLoad.classList.add('is-visible');
+    }
+    if (img.length === 0) {
+      Notiflix.Notify.failure(
+        'Sorry, there are no images matching your search query. Please try again.'
+      );
+      return;
+    }
+    refs.listGallery.innerHTML = imgCart(img);
+  } catch (error) {
+    console.log('error');
+  }
+}
+
+async function onLoad() {
+  try {
+    const dataImg = await fetchImg(searchName);
+    const { img, totalHits, lastPage } = dataImg;
+    refs.btnLoad.classList.remove('is-visible');
+    if (lastPage) {
+      refs.btnLoad.classList.add('is-visible');
+      Notiflix.Notify.info(
+        "We're sorry, but you've reached the end of search results."
+      );
+    }
+    refs.listGallery.insertAdjacentHTML('beforeend', imgCart(img));
+  } catch (error) {
+    console.log('error');
+  }
+}
+
+const imgCart = item => {
+  return item
+    .map(
+      ({
+        webformatURL,
+        largeImageURL,
+        tags,
+        likes,
+        views,
+        comments,
+        downloads,
+      }) => `<div class="photo-card">
+  <a href="${largeImageURL}"><img src="${webformatURL}" alt="${tags}" loading="lazy" /></a>
     <div class="info">
       <p class="info-item">
-        <b>Likes</b>
+        <b>Likes:<br>${likes}</br></b>
       </p>
       <p class="info-item">
-        <b>Views</b>
+        <b>Views:<br>${views}</br></b>
       </p>
       <p class="info-item">
-        <b>Comments</b>
+        <b>Comments:<br>${comments}</br></b>
       </p>
       <p class="info-item">
-        <b>Downloads</b>
+        <b>Downloads:<br>${downloads}</br></b>
       </p>
     </div>
-  </div>`;
+</div>`
+    )
+    .join('');
+};
 
-//import { debounce } from 'lodash';
-//import fetchCountries from './fetchCountries';
-
-//const DEBOUNCE_DELAY = 300;
-
-//const refs = {
-//  input: document.querySelector('#search-box'),
-//  list: document.querySelector('.country-list'),
-//  info: document.querySelector('.country-info'),
-//};
-
-//refs.input.addEventListener('input', debounce(nameInput, DEBOUNCE_DELAY));
-
-//function nameInput(e) {
-//  const nameCountry = e.target.value.trim().toLowerCase();
-//  console.log(nameCountry);
-//  if (nameCountry === '') {
-//    clearInput();
-//    return;
-//  }
-//  clearInput();
-
-//  fetchCountries(nameCountry)
-//    .then(array => {
-//      if (array.length > 10) {
-//        Notiflix.Notify.info(
-//          'Too many matches found. Please enter a more specific name.'
-//        );
-//      }
-//      if (array.length >= 2 && array.length <= 10) {
-//        const result = array?.reduce(
-//          (acc, item) => acc + listCountry(item),
-//          ''
-//        );
-//        refs.list.insertAdjacentHTML('beforeend', result);
-//      }
-//      if (array.length === 1) {
-//        const resultCounry = array?.reduce(
-//          (acc, item) => acc + informationCountry(item),
-//          ''
-//        );
-//        refs.list.insertAdjacentHTML('beforeend', resultCounry);
-//      }
-//    })
-//    .catch(error => {
-//      Notiflix.Notify.failure('Oops, there is no country with that name');
-//      return console.log('error');
-//    });
-//}
-
-//const listCountry = item => `<li class="nameList">
-//<img src="${item.flags.svg}" width=30px heigth = 20px> ${item.name.official}</li>`;
-
-//const informationCountry = item => `<li class="nameList">
-//<h1><img src="${item.flags.svg}" width = 50px>${item.name.official}</h1>
-//<p>Capital: ${item.capital}</p>
-//<p>Population: ${item.population}</p>
-//<p>Languages: ${Object.values(item.languages)}</p>
-//</li>`;
-
-//function clearInput() {
-//  refs.list.innerHTML = '';
-//}
+function clearInput() {
+  refs.listGallery.innerHTML = '';
+}
